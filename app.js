@@ -1,5 +1,7 @@
 let http = require("http"); //http 请求
-let querystring = require("querystring");
+let qs = require("querystring");
+let cheerio = require("cheerio");
+let fs = require("fs");
 let iconv = require("iconv-lite");
 
 function request(path,param,callback) {
@@ -24,25 +26,27 @@ function request(path,param,callback) {
     }
   };
 
+
   let req = http.request(options, function (res) {
-    var json = ""; //定义json变量来接收服务器传来的数据
-    console.log(res.headers);
+    let data = [];
+    let size = 0;
     //res.on方法监听数据返回这一过程，"data"参数表示数数据接收的过程中，数据是一点点返回回来的，这里的chunk代表着一条条数据
     res.on("data", function (chunk) {
-      json += chunk; //json由一条条数据拼接而成
+      // data += chunk;
+      data.push(chunk);
+      size+=chunk.length;
     })
     res.on("end", function () {
-      callback(json,'gbk');
+      let buf=Buffer.concat(data,size);
+      let str=iconv.decode(buf,'gbk');
+      callback(str)
     })
   });
-
-
-
 
   req.on("error", function () {
     console.log('error')
   })
-  req.write(querystring.stringify(param)); //post 请求传参
+  req.write(qs.stringify(param)); //post 请求传参
   req.end(); //必须要写
 }
 let obj = {
@@ -59,6 +63,24 @@ let obj = {
 request('http://www.hshfy.sh.cn/shfy/gweb2017/ktgg_search_content.jsp',obj,thisData)
 
 function thisData(data) {
+
   console.log(data)
+
+  let str = "<!DOCTYPE html>\n" +
+    "<html lang=\"en\">\n" +
+    "  <head>\n" +
+    "    <meta charset=\"utf8\">\n" +
+    "    <meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">\n" +
+    "    <meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\">\n" +
+    "    <title>tast</title>\n" +
+    "  </head>\n" +
+    "  <body>\n" +
+    // iconv.decode(data,'gbk') +
+    data +
+    "  </body>\n" +
+    "</html>\n"
+  fs.writeFile('index.html',str,'utf8',function (err) {
+    console.log(err)
+  })
 }
 // module.exports = request;
