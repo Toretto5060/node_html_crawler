@@ -3,6 +3,8 @@ let qs = require("querystring");
 let cheerio = require("cheerio");
 let fs = require("fs");
 let iconv = require("iconv-lite");
+let excel = require('node-xlsx');  //基于Node.js将数据生成导出excel文件，生成文件格式为xlsx；
+
 
 function request(path,param,callback) {
   let options = {
@@ -62,25 +64,70 @@ let obj = {
 }
 request('http://www.hshfy.sh.cn/shfy/gweb2017/ktgg_search_content.jsp',obj,thisData)
 
+
+
+
+
+
+
+function iGetInnerText(testStr) {
+  var resultStr = testStr.replace(/\s/g,""); //去除所有空格
+  resultStr = testStr.replace(/&nbsp;/ig, ""); //去除nbsp
+  return resultStr;
+}
+
+
+
+
 function thisData(data) {
 
-  console.log(data)
+  let strDatas = iGetInnerText(data)
+  let tableCont = data.split('<TBODY>')[1].split('</TBODY>')[0];
+  let line = tableCont.split('</TD>')
 
-  let str = "<!DOCTYPE html>\n" +
-    "<html lang=\"en\">\n" +
-    "  <head>\n" +
-    "    <meta charset=\"utf8\">\n" +
-    "    <meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">\n" +
-    "    <meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\">\n" +
-    "    <title>tast</title>\n" +
-    "  </head>\n" +
-    "  <body>\n" +
-    // iconv.decode(data,'gbk') +
-    data +
-    "  </body>\n" +
-    "</html>\n"
-  fs.writeFile('index.html',str,'utf8',function (err) {
-    console.log(err)
-  })
+  for (let i in line) {
+    let s=line[i];
+    // 获取标题投
+    let title = '';
+    
+    title = s.match(/id(\S*)ff/);
+    
+    console.log(title)
+  }
+  // console.log(line)
+
+
+//写入excel
+  // var datas = [
+  //   {
+  //     name : 'sheet1',
+  //     data : [
+  //           [
+  //               'ID',
+  //               'Name',
+  //               'Score'
+  //           ],
+  //           [
+  //               '1',
+  //               'Michael',
+  //               '99'
+
+  //           ],
+  //           [
+  //               '2',
+  //               'Jordan',
+  //               '98'
+  //           ]
+  //       ]
+  //   }  //格式实例
+  // ]
+
+  // var buffer = excel.build(datas);
+  // fs.writeFile('./resut.xlsx', buffer, function (err) {
+  //   if (err){
+  //     throw err;
+  //   }
+  //   console.log('生成表格成功');
+  // });
 }
 // module.exports = request;
