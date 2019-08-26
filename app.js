@@ -83,17 +83,18 @@ function thisData(data) {
 
   let strDatas = iGetInnerText(data)
   let tableCont = data.split('<TBODY>')[1].split('</TBODY>')[0];
-  let line = tableCont.split('</TD>')
-
+  let line = tableCont.split('</TD>');
   for (let i in line) {
     let s=line[i];
     // 获取标题投
     let title = '';
-    
-    title = s.match(/id(\S*)ff/);
-    
+    if (s.match(/<B>([\s\S]*?)<\/B>/)) {
+      title = s.match(/<B>([\s\S]*?)<\/B>/)[1];
+    }
     console.log(title)
   }
+
+  console.log(line)
   // console.log(line)
 
 
