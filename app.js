@@ -80,8 +80,8 @@ let timer = setInterval(()=>{
      * 生成表格
      * **/
     let excelData = dataArr
-    // const options = {'!cols': [{ wch: 6 }, { wch: 7 }, { wch: 10 }, { wch: 20 } ]};
-    var buffer = excel.build([{name:"sheet1",data:excelData}]);
+    const options = {'!cols': [{ wch: 6 }, { wch: 7 }, { wch: 10 }, { wch: 50 } ]};
+    var buffer = excel.build([{name:"sheet1",data:excelData}],options);
     fs.writeFile('./resut.xlsx', buffer, function (err) {
       if (err){
         console.log(err);
@@ -162,6 +162,20 @@ function thisData(data) {
         dataArr.push(lineArr);
       }
     }
+
+    // 暂时持续写入
+    let excelData = dataArr
+    const options = {'!cols': [{ wch: 10 }, { wch: 16 }, { wch: 26 }, { wch: 22 }, { wch: 9 }, { wch: 9 }, { wch: 9 }, { wch: 9 }, { wch: 9 }, { wch: 9 }, { wch: 9 } ]};
+    var buffer = excel.build([{name:"sheet1",data:excelData}],options);
+    fs.writeFile('./resut.xlsx', buffer, function (err) {
+      if (err){
+        console.log(err);
+        return;
+      }
+      console.log('excel已下载');
+    });
+
+
     fistPost = false;
     console.log('第'+obj.pagesnum+"页数据写入完毕")
   }
