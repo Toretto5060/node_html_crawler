@@ -5,6 +5,10 @@ let fs = require("fs");
 let iconv = require("iconv-lite");
 let excel = require('node-xlsx');  //基于Node.js将数据生成导出excel文件，生成文件格式为xlsx；
 
+let dataArr = [];  // excel格式数据
+let fistPost = true;  //第一次请求带table。其它不需要
+let pageAllNums = 1;  // 总页数
+
 
 function request(path,param,callback) {
   let options = {
@@ -51,6 +55,8 @@ function request(path,param,callback) {
   req.write(qs.stringify(param)); //post 请求传参
   req.end(); //必须要写
 }
+
+
 let obj = {
   'yzm': 'C2q6',
   'ft':'',
@@ -62,7 +68,36 @@ let obj = {
   'ah':'',
   'pagesnum':1
 }
-request('http://www.hshfy.sh.cn/shfy/gweb2017/ktgg_search_content.jsp',obj,thisData)
+request('http://www.hshfy.sh.cn/shfy/gweb2017/ktgg_search_content.jsp',obj,thisData);
+
+let timer = setInterval(()=>{
+  if (obj.pagesnum < (pageAllNums - 633)) {
+    obj.pagesnum += 1;
+    request('http://www.hshfy.sh.cn/shfy/gweb2017/ktgg_search_content.jsp',obj,thisData);
+  } else {
+    console.log(dataArr);
+    /***
+     * 生成表格
+     * **/
+    let excelData = dataArr
+    // const options = {'!cols': [{ wch: 6 }, { wch: 7 }, { wch: 10 }, { wch: 20 } ]};
+    var buffer = excel.build([{name:"sheet1",data:excelData}]);
+    fs.writeFile('./resut.xlsx', buffer, function (err) {
+      if (err){
+        console.log(err);
+        return;
+      }
+      console.log('excel已下载');
+    });
+    clearInterval(timer);
+    timer = null;
+  }
+},3000)
+
+
+
+
+
 
 
 function iGetInnerText(testStr) {
@@ -71,11 +106,14 @@ function iGetInnerText(testStr) {
   return resultStr;
 }
 
-function thisData(data) {
-  let reg = /(<strong>)+(.*?)(<\/strong>)+/
-  let pageNum = Math.ceil(Number(reg.exec(data)[2]) / 15)
-  console.log(pageNum)
 
+
+function thisData(data) {
+  if (fistPost) {  //首次加载获取总页数
+    let reg = /(<strong>)+(.*?)(<\/strong>)+/
+    let pageNum = Math.ceil(Number(reg.exec(data)[2]) / 15);
+    pageAllNums = pageNum;
+  }
   let tableCont = data.split('<TBODY>')[1].split('</TBODY>')[0];
   let line = tableCont.split('</TR>');
   /***
@@ -84,41 +122,56 @@ function thisData(data) {
   for (let i in line) {
     line[i] += "</TR>"
   }
-  let dataArr = [];
   if (line.length > 2 && line[2].indexOf('暂时') == -1) {
     for (let j in line) {
       let eachLine = line[j].split('</TD>');
       let lineArr = []
       for (let k in eachLine) {
-        // if (j > 0) {
-        eachLine[k]  += "</TD>"
-        let reg = /(<.+?>)+(.*?)(<\/.+?>)+/
-        let str1 = reg.exec(eachLine[k])     // 截取节点中数据: <div>123</div>
-        if (str1[2].indexOf("*")) {
-          let regs = /\<.*\>/
-          let newEachLine = iGetInnerText(str1[2].replace(regs, '',))  // 去除带*的附带节点：<span></span>和去空格去nbsp;
+        /***
+         * 第一次请求带table头，其它不要
+         * ***/
+        let newEachLine = ""
+        if (fistPost) {
+          eachLine[k] += "</TD>"
+          let reg = /(<.+?>)+(.*?)(<\/.+?>)+/
+          let str1 = reg.exec(eachLine[k])     // 截取节点中数据: <div>123</div>
+          if (str1[2].indexOf("*")) {
+            let regs = /\<.*\>/
+            newEachLine = iGetInnerText(str1[2].replace(regs, '',))  // 去除带*的附带节点：<span></span>和去空格去nbsp;
+          } else {
+            newEachLine = iGetInnerText(str1[2])
+          }
+        } else {
+          if (j > 0) {
+            eachLine[k] += "</TD>"
+            let reg = /(<.+?>)+(.*?)(<\/.+?>)+/
+            let str1 = reg.exec(eachLine[k])     // 截取节点中数据: <div>123</div>
+            if (str1[2].indexOf("*")) {
+              let regs = /\<.*\>/
+              newEachLine = iGetInnerText(str1[2].replace(regs, '',))  // 去除带*的附带节点：<span></span>和去空格去nbsp;
+            } else {
+              newEachLine = iGetInnerText(str1[2])
+            }
+          }
+        }
+        if (newEachLine != "") {
           lineArr.push(newEachLine);
         }
-        // }
       }
-      dataArr.push(lineArr)
-
+      if (lineArr.length > 1) {
+        dataArr.push(lineArr);
+      }
     }
+    fistPost = false;
+    console.log('第'+obj.pagesnum+"页数据写入完毕")
   }
 
-  /***
-   * 生成表格
-   * **/
-  let excelData = dataArr
-  // const options = {'!cols': [{ wch: 6 }, { wch: 7 }, { wch: 10 }, { wch: 20 } ]};
-  var buffer = excel.build([{name:"sheet1",data:excelData}]);
-  fs.writeFile('./resut.xlsx', buffer, function (err) {
-    if (err){
-      console.log(err);
-      return;
-    }
-    console.log('生成表格成功');
-  });
+
+
+
+
+
+
 }
 
 // module.exports = request;
