@@ -17,7 +17,7 @@ function request(path,param,callback) {
       'Accept-Encoding': 'gzip, deflate',
       'Accept-Language':' zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7',
       'Connection': 'keep-alive',
-      'Content-Length': '76',
+      // 'Content-Length': '76',
       'Content-Type': 'application/x-www-form-urlencoded',
       'Cookie': 'JSESSIONID=A1E67355E2E30779DBBCB652CB5A21E6-n1',
       'Host': 'www.hshfy.sh.cn',
@@ -52,83 +52,73 @@ function request(path,param,callback) {
   req.end(); //必须要写
 }
 let obj = {
-  'yzm': 'szwP',
+  'yzm': 'C2q6',
   'ft':'',
-  'ktrqks': '2019-08-23',
-  'ktrqjs': '2019-09-23',
+  'ktrqks': '2019-08-27',
+  'ktrqjs': '2019-09-27',
   'spc':'',
   'yg':'',
-  'bg':'',
+  'bg':'%E5%85%AC%E5%8F%B8',
   'ah':'',
-  'pagesnum': 1
+  'pagesnum':1
 }
 request('http://www.hshfy.sh.cn/shfy/gweb2017/ktgg_search_content.jsp',obj,thisData)
 
 
-
-
-
-
-
 function iGetInnerText(testStr) {
-  var resultStr = testStr.replace(/\s/g,""); //去除所有空格
+  let resultStr = testStr.replace(/\s/g,""); //去除所有空格
   resultStr = testStr.replace(/&nbsp;/ig, ""); //去除nbsp
   return resultStr;
 }
 
-
-
-
 function thisData(data) {
+  let reg = /(<strong>)+(.*?)(<\/strong>)+/
+  let pageNum = Math.ceil(Number(reg.exec(data)[2]) / 15)
+  console.log(pageNum)
 
-  let strDatas = iGetInnerText(data)
   let tableCont = data.split('<TBODY>')[1].split('</TBODY>')[0];
-  let line = tableCont.split('</TD>');
+  let line = tableCont.split('</TR>');
+  /***
+   * 处理截取丢失字符及获取table数据
+   * ***/
   for (let i in line) {
-    let s=line[i];
-    // 获取标题投
-    let title = '';
-    if (s.match(/<B>([\s\S]*?)<\/B>/)) {
-      title = s.match(/<B>([\s\S]*?)<\/B>/)[1];
+    line[i] += "</TR>"
+  }
+  let dataArr = [];
+  if (line.length > 2 && line[2].indexOf('暂时') == -1) {
+    for (let j in line) {
+      let eachLine = line[j].split('</TD>');
+      let lineArr = []
+      for (let k in eachLine) {
+        // if (j > 0) {
+        eachLine[k]  += "</TD>"
+        let reg = /(<.+?>)+(.*?)(<\/.+?>)+/
+        let str1 = reg.exec(eachLine[k])     // 截取节点中数据: <div>123</div>
+        if (str1[2].indexOf("*")) {
+          let regs = /\<.*\>/
+          let newEachLine = iGetInnerText(str1[2].replace(regs, '',))  // 去除带*的附带节点：<span></span>和去空格去nbsp;
+          lineArr.push(newEachLine);
+        }
+        // }
+      }
+      dataArr.push(lineArr)
+
     }
-    console.log(title)
   }
 
-  console.log(line)
-  // console.log(line)
-
-
-//写入excel
-  // var datas = [
-  //   {
-  //     name : 'sheet1',
-  //     data : [
-  //           [
-  //               'ID',
-  //               'Name',
-  //               'Score'
-  //           ],
-  //           [
-  //               '1',
-  //               'Michael',
-  //               '99'
-
-  //           ],
-  //           [
-  //               '2',
-  //               'Jordan',
-  //               '98'
-  //           ]
-  //       ]
-  //   }  //格式实例
-  // ]
-
-  // var buffer = excel.build(datas);
-  // fs.writeFile('./resut.xlsx', buffer, function (err) {
-  //   if (err){
-  //     throw err;
-  //   }
-  //   console.log('生成表格成功');
-  // });
+  /***
+   * 生成表格
+   * **/
+  let excelData = dataArr
+  // const options = {'!cols': [{ wch: 6 }, { wch: 7 }, { wch: 10 }, { wch: 20 } ]};
+  var buffer = excel.build([{name:"sheet1",data:excelData}]);
+  fs.writeFile('./resut.xlsx', buffer, function (err) {
+    if (err){
+      console.log(err);
+      return;
+    }
+    console.log('生成表格成功');
+  });
 }
+
 // module.exports = request;
