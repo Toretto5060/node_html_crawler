@@ -165,14 +165,14 @@ function thisData(data) {
 
     // 暂时持续写入
     let excelData = dataArr
-    const options = {'!cols': [{ wch: 10 }, { wch: 16 }, { wch: 26 }, { wch: 22 }, { wch: 9 }, { wch: 9 }, { wch: 9 }, { wch: 9 }, { wch: 9 }, { wch: 9 }, { wch: 9 } ]};
-    var buffer = excel.build([{name:"sheet1",data:excelData}],options);
+    // const options = {'!cols': [{ wch: 10 }, { wch: 16 }, { wch: 26 }, { wch: 22 }, { wch: 9 }, { wch: 9 }, { wch: 9 }, { wch: 9 }, { wch: 9 }, { wch: 9 }, { wch: 9 } ]};
+    var buffer = excel.build([{name:"sheet1",data:excelData}]);
     fs.writeFile('./resut.xlsx', buffer, function (err) {
       if (err){
         console.log(err);
         return;
       }
-      console.log('excel已下载');
+      // console.log('excel已下载');
     });
 
 
