@@ -13,12 +13,9 @@
     "exceljs": "^1.15.0",
     "fs": "0.0.1-security",
     "iconv-lite": "^0.5.0",
-    "node-xlsx": "^0.15.0",
-    "querystring": "^0.2.0",
-    "superagent-charset": "^1.2.0"
+    "querystring": "^0.2.0"
   },
   "devDependencies": {
-    "cheerio": "^1.0.0-rc.3",
-    "superagent": "^5.1.0"
+    "cheerio": "^1.0.0-rc.3"
   }
 }

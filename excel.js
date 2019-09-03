@@ -1,6 +1,5 @@
 let http = require("http"); //http 请求
 let qs = require("querystring");
-let cheerio = require("cheerio");
 let fs = require("fs");
 let iconv = require("iconv-lite");
 let Excel = require("exceljs");
