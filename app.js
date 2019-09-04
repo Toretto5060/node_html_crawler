@@ -6,7 +6,8 @@ function handleMySql(mySqlName,fn){
     host:'47.95.1.44',        // ip
     user:'root',              //用户名
     password:'123456',        //密码
-    database:mySqlName //数据库名
+    database:mySqlName, //数据库名
+    multipleStatements: true
   }
   let db = mysql.createConnection(sqlCont);
   db.connect(function(error){

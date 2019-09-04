@@ -10,6 +10,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "crypto": "^1.0.1",
     "exceljs": "^1.15.0",
     "fs": "0.0.1-security",
     "iconv-lite": "^0.5.0",

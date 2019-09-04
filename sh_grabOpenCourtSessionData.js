@@ -1,4 +1,5 @@
 const app = require('./app');
+const crypto = require('crypto'); //加载md5加密文件
 let http = require("http"); //http 请求
 let qs = require("querystring");
 let fs = require("fs");
@@ -9,6 +10,9 @@ let fistPost = true;  //第一次请求带table。其它不需要
 let fistWrite = true;
 let pageAllNums = 1;  // 总页数
 let titleList = [];   // 处理过的表格头数据
+
+let errorPost = 0;
+
 
 /***
  *  获取当前时间
@@ -24,17 +28,17 @@ let month=(today.getMonth()+1<10)?"0"+(today.getMonth()+1):today.getMonth()+1;
 let day=(today.getDate())<10?"0"+today.getDate():today.getDate();
 startData = year + '-' + month + '-' + day
 
-let endYear = ""
-let endMonth = ""
-let endDay = day
-if (Number(month) + 6 > 12) {
-  endYear = Number(year) + 1
-  endMonth = (Number(Number(month) + 6 - 12)) < 10 ? "0" + (Number(Number(month) + 6 - 12)) : (Number(Number(month) + 6 - 12))
-} else {
-  endYear = Number(year)
-  endMonth = Number(Number(month) + 6)
-}
-endData = endYear + '-' + endMonth + '-' + endDay
+// let endYear = ""
+// let endMonth = ""
+// let endDay = day
+// if (Number(month) + 6 > 12) {
+//   endYear = Number(year) + 1
+//   endMonth = (Number(Number(month) + 6 - 12)) < 10 ? "0" + (Number(Number(month) + 6 - 12)) : (Number(Number(month) + 6 - 12))
+// } else {
+//   endYear = Number(year)
+//   endMonth = Number(Number(month) + 6)
+// }
+endData = Number(year)+1 + '-' +  '12-31'
 
 
 // setInterval(()=>{
@@ -60,6 +64,7 @@ endData = endYear + '-' + endMonth + '-' + endDay
 //       endMonth = (Number(Number(month) + 6 - 12)) < 10 ? "0" + (Number(Number(month) + 6 - 12)) : (Number(Number(month) + 6 - 12))
 //       endData = endYear + '-' + endMonth + '-' + endDay
 //     }
+//     endData = Number(year)+1 + '-' +  '12-31'
 //     let timer = setInterval(()=>{
 //       clearInterval(timer);
 //       timer = null;
@@ -140,16 +145,27 @@ function request(path,param,callback) {
     let data = [];
     let size = 0;
     //res.on方法监听数据返回这一过程，"data"参数表示数数据接收的过程中，数据是一点点返回回来的，这里的chunk代表着一条条数据
-    res.on("data", function (chunk) {
-      // data += chunk;
-      data.push(chunk);
-      size+=chunk.length;
-    })
-    res.on("end", function () {
-      let buf=Buffer.concat(data,size);
-      let str=iconv.decode(buf,'gbk');
-      callback(str)
-    })
+    if (res.statusCode == 200) {
+      res.on("data", function (chunk) {
+        data.push(chunk);
+        size+=chunk.length;
+      })
+      res.on("end", function () {
+        let buf=Buffer.concat(data,size);
+        let str=iconv.decode(buf,'gbk');
+        callback(str)
+      })
+    } else {
+      errorPost += 1;
+      if (errorPost < 4) {
+        request('http://www.hshfy.sh.cn/shfy/gweb2017/ktgg_search_content.jsp',postObj,thisData);
+      } else {
+        //TODO 记录请求失败的页数
+        errorPost = 0;
+        postObj.pagesnum += 1;
+        request('http://www.hshfy.sh.cn/shfy/gweb2017/ktgg_search_content.jsp',postObj,thisData);
+      }
+    }
   });
 
   req.on("error", function () {
@@ -180,11 +196,11 @@ function thisData(data) {
     line[i] += "</TR>"
   }
   if (line.length > 2 && line[2].indexOf('暂时') == -1) {
-    for (let j = 0; j < line.length; j++) {
+    for (let j = 1; j < line.length; j++) {    // 第一个数组中数组始终为9个空置，所以从1开始
       let lineArr = []
       let eachLine = line[j].split('</TD>');
       let newEachLine = ""
-      for (let k = 0; k < eachLine.length; k++) {
+      for (let k = 0; k < eachLine.length-1; k++) {  // 最后一条数据始终为空，故不循环，减1
         /***
          * 获取表头数据
          * ***/
@@ -215,17 +231,19 @@ function thisData(data) {
             newEachLine = iGetInnerText(str1[2])
           }
         }
-        if (newEachLine != "") {
-          lineArr.push(newEachLine);
-        }
+        lineArr.push(newEachLine);
       }
       if (lineArr.length > 1) {
+        const hash = crypto.createHash('md5');   //将数组转换成字符串，加密存入，便于批量导入判断是否为重复数据
+        hash.update(JSON.stringify(lineArr));
+        let md5Paw=hash.digest('hex');
+        lineArr.push(md5Paw);
         contDataList.push(lineArr)
       }
       fistPost = false;
     }
   }
-  dealWithData(contDataList)
+  dealWithData(contDataList);
 }
 
 /***
@@ -246,72 +264,96 @@ function dealWithData(data) {
     titleDataList.push(obj)
   }
 
-
-  // if (fistWrite) {
-  //   // worksheet.columns = titleDataList;
-  //   fistWrite = false;
-  // }
   let tableData = ['court','the_court','trial_date','case_num','cause_action','department','presiding_judge','plaintiff','defendant']
+  let dataLength = data.length;
 
-  for (let x = 0; x < data.length; x++) {
-    let obj = {};
-    for (let y = 0; y < tableData.length; y++) {
-      if (data[x][y]) {
-        obj[tableData[y]] = data[x][y]
-      } else {
-        obj[tableData[y]] = ""
+
+  /***
+  *  批量导入
+  **/
+
+  let sql = "INSERT IGNORE INTO courtData(`court`,`the_court`,`trial_date`, `case_num`, `cause_action`, `department`, `presiding_judge`, `plaintiff`, `defendant`, `md5`) VALUES ?";
+  // let sql2 = 'SELECT md5 FROM courtData VALUES ?'
+
+  app.handleMySql('sh_grabOpenCourt',function (db) {
+    db.query(sql,[data],(err,rows)=>{
+      if (err) {
+        //TODO 写入失败计入log
+        console.log(err);
       }
-    }
+      // LoopExecution();
+      console.log('第' + postObj.pagesnum+'页数据导入完毕，共'+pageAllNums+'页');
+    })
+  })
 
 
-    app.handleMySql('sh_grabOpenCourt',function (db) {
-      db.query(
-        'select * from courtData where ' +
-        'court=? and ' +
-        'the_court=? and ' +
-        'trial_date=? and ' +
-        'case_num=? and ' +
-        'cause_action=? and ' +
-        'department=? and ' +
-        'presiding_judge=? and ' +
-        'plaintiff=? and ' +
-        'defendant=? ',
-        [obj.court,
-          obj.the_court,
-          obj.trial_date,
-          obj.case_num,
-          obj.cause_action,
-          obj.department,
-          obj.presiding_judge,
-          obj.plaintiff,
-          obj.defendant
-        ], (error, rows) => {
-          if (error) {
-            console.log(error)
-          }
-          if (rows.length < 1) {
+
+
+
+
+
+  // for (let x = 0; x < dataLength; x++) {
+  //   let obj = {};
+  //   for (let y = 0; y < tableData.length; y++) {
+  //     if (data[x][y]) {
+  //       obj[tableData[y]] = data[x][y]
+  //     } else {
+  //       obj[tableData[y]] = ""
+  //     }
+  //   }
+
+    // app.handleMySql('sh_grabOpenCourt',function (db) {
+    //   db.query(
+    //     'select * from courtData where ' +
+    //     'court=? and ' +
+    //     'the_court=? and ' +
+    //     'trial_date=? and ' +
+    //     'case_num=? and ' +
+    //     'cause_action=? and ' +
+    //     'department=? and ' +
+    //     'presiding_judge=? and ' +
+    //     'plaintiff=? and ' +
+    //     'defendant=? ',
+    //     [obj.court,
+    //       obj.the_court,
+    //       obj.trial_date,
+    //       obj.case_num,
+    //       obj.cause_action,
+    //       obj.department,
+    //       obj.presiding_judge,
+    //       obj.plaintiff,
+    //       obj.defendant
+    //     ], (error, rows) => {
+    //       if (error) {
+    //         console.log(error)
+    //       }
+    //       if (rows.length < 1) {
             /****
              * 写入
              * **/
-            app.handleMySql('sh_grabOpenCourt',function (db) {
-              db.query(
-                'INSERT INTO courtData SET  ?',
-                obj,
-                (error,rows) => {
-                  if(error){
-                    console.log(error);
-                  }else{
-                    console.log('写入成功')
-                  }
-                });
-            });
-          } else {
-            console.log('已存在list_id = '+rows[0].list_id+'的记录')
-          }
-        });
-    })
-  }
+          //   app.handleMySql('sh_grabOpenCourt',function (db) {
+          //     db.query(
+          //       'INSERT INTO courtData SET  ?',
+          //       obj,
+          //       (error,rows) => {
+          //         if(error){
+          //           console.log(error);
+          //         }else{
+          //           console.log('写入成功')
+  
+          //         }
+          //       });
+          //   });
+          // } else {
+          //   console.log('已存在list_id = '+rows[0].list_id+'的记录')
+          // }
+  //       });
+  //   })
 
+
+  // }
+
+  // }
 }
 
 
