@@ -1,15 +1,12 @@
+const express = require("express");
+let app = express();
 const mysql = require("mysql");
-
+let config = require("./config/index");
 
 function handleMySql(mySqlName,fn){
-  let sqlCont={
-    host:'47.95.1.44',        // ip
-    user:'root',              //用户名
-    password:'123456',        //密码
-    database:mySqlName, //数据库名
-    multipleStatements: true
-  }
-  let db = mysql.createConnection(sqlCont);
+  config.sqlCont.database = mySqlName
+  let db =  mysql.createConnection(config.sqlCont);
+  db.database = mySqlName;
   db.connect(function(error){
     if(error){
       console.log(error);
@@ -27,5 +24,6 @@ function handleMySql(mySqlName,fn){
 module.exports = {
   handleMySql
 };
-require('./sh_grabOpenCourtSessionData.js'); //法庭信息
+require('./module/sh_grabOpenCourtSessionData.js'); // 上海高院开庭信息
+
 

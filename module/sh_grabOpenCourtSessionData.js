@@ -1,10 +1,9 @@
-const app = require('./app');
+const app = require('../app');
 const crypto = require('crypto'); //加载md5加密文件
 let http = require("http"); //http 请求
 let qs = require("querystring");
 let fs = require("fs");
 let iconv = require("iconv-lite");
-
 
 let fistPost = true;  //第一次请求带table。其它不需要
 let fistWrite = true;
@@ -92,7 +91,6 @@ let postObj = {
   'pagesnum':1
 }
 request('http://www.hshfy.sh.cn/shfy/gweb2017/ktgg_search_content.jsp',postObj,thisData);
-
 
 function LoopExecution(){   // 立即查询当天 -- 半个月后数据
   let timer = setInterval(()=>{
@@ -238,7 +236,15 @@ function thisData(data) {
         hash.update(JSON.stringify(lineArr));
         let md5Paw=hash.digest('hex');
         lineArr.push(md5Paw);
-        contDataList.push(lineArr)
+
+        let today = new Date();
+        let year=today.getFullYear();
+        let month=(today.getMonth()+1<10)?"0"+(today.getMonth()+1):today.getMonth()+1;
+        let day=(today.getDate())<10?"0"+today.getDate():today.getDate();
+        let nowTime = year + '-' + month + '-' + day;
+        // let nowTime = new Date().getTime();
+        lineArr.push(nowTime);
+        contDataList.push(lineArr);
       }
       fistPost = false;
     }
@@ -264,25 +270,20 @@ function dealWithData(data) {
     titleDataList.push(obj)
   }
 
-  let tableData = ['court','the_court','trial_date','case_num','cause_action','department','presiding_judge','plaintiff','defendant']
-  let dataLength = data.length;
-
-
   /***
   *  批量导入
   **/
-
-  let sql = "INSERT IGNORE INTO courtData(`court`,`the_court`,`trial_date`, `case_num`, `cause_action`, `department`, `presiding_judge`, `plaintiff`, `defendant`, `md5`) VALUES ?";
-  // let sql2 = 'SELECT md5 FROM courtData VALUES ?'
-
-  app.handleMySql('sh_grabOpenCourt',function (db) {
+  let sql = "INSERT IGNORE INTO courtData(`court`,`the_court`,`trial_date`, `case_num`, `cause_action`, `department`, `presiding_judge`, `plaintiff`, `defendant`, `md5`, `set_timestamp`) VALUES ?";    // 批量插入，设置MD5为唯一索引，重复过滤
+  app.handleMySql('sh_grabOpenCourt', (db)=> {
     db.query(sql,[data],(err,rows)=>{
       if (err) {
         //TODO 写入失败计入log
         console.log(err);
       }
-      // LoopExecution();
-      console.log('第' + postObj.pagesnum+'页数据导入完毕，共'+pageAllNums+'页');
+      // rows.affectedRows   // 更新条数
+      // rows.insertId   // 插入起始id
+      LoopExecution();
+      console.log('第' + postObj.pagesnum+'页数据导入完毕，共'+pageAllNums+'页，共'+pageAllNums*15+'条数据');
     })
   })
 
@@ -340,7 +341,7 @@ function dealWithData(data) {
           //           console.log(error);
           //         }else{
           //           console.log('写入成功')
-  
+
           //         }
           //       });
           //   });
