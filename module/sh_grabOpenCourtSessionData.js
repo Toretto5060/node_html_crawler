@@ -90,7 +90,7 @@ let postObj = {
   'ah':'',
   'pagesnum':1
 }
-request('http://www.hshfy.sh.cn/shfy/gweb2017/ktgg_search_content.jsp',postObj,thisData);
+// request('http://www.hshfy.sh.cn/shfy/gweb2017/ktgg_search_content.jsp',postObj,thisData);
 
 function LoopExecution(){   // 立即查询当天 -- 半个月后数据
   let timer = setInterval(()=>{
@@ -102,6 +102,7 @@ function LoopExecution(){   // 立即查询当天 -- 半个月后数据
     } else {
       clearInterval(timer);
       timer = null;
+      console.log('数据更新完毕')
     }
   },3000)
 }
