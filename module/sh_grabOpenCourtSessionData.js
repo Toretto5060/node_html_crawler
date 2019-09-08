@@ -90,7 +90,7 @@ let postObj = {
   'ah':'',
   'pagesnum':1
 }
-// request('http://www.hshfy.sh.cn/shfy/gweb2017/ktgg_search_content.jsp',postObj,thisData);
+request('http://www.hshfy.sh.cn/shfy/gweb2017/ktgg_search_content.jsp',postObj,thisData);
 
 function LoopExecution(){   // 立即查询当天 -- 半个月后数据
   let timer = setInterval(()=>{
@@ -226,9 +226,17 @@ function thisData(data) {
           if (str1[2].indexOf("*")) {
             let regs = /\<.*\>/
             newEachLine = iGetInnerText(str1[2].replace(regs, '',));// 去除带*的附带节点：<span></span>和去空格去nbsp;
-          } else {
+          } 
+          else{
             newEachLine = iGetInnerText(str1[2])
           }
+          if(str1[2].indexOf("上午") > -1) {   //将时间转换为时间戳
+            newEachLine=Date.parse(iGetInnerText(str1[2]).replace('上午', ' ',).replace('点', ':',).replace('分','')); 
+          }
+          else if(str1[2].indexOf("下午") > -1) {
+            newEachLine=Date.parse(iGetInnerText(str1[2]).replace('下午', ' ',).replace('点', ':',).replace('分',''));
+          }
+          
         }
         lineArr.push(newEachLine);
       }

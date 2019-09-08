@@ -3,9 +3,56 @@ let server = express();
 const bodyParser=require("body-parser");
 const mysql = require("mysql");
 let config = require("./config/index");
+const NodeRSA = require('node-rsa');
+const fs = require('fs');
+
+
 
 server.use(bodyParser.urlencoded({ extended: true }));
 server.use(bodyParser.json());
+
+function generator() {  // 生成秘钥 私钥/公钥
+ var key = new NodeRSA({ b: 512 })
+ key.setOptions({ encryptionScheme: 'pkcs1' })
+ var privatePem = key.exportKey('pkcs1-private-pem')
+ var publicPem = key.exportKey('pkcs1-public-pem')
+ fs.writeFile('./pem/public.pem', publicPem, (err) => {
+ if (err) throw err
+ console.log('公钥已保存！')
+ })
+ fs.writeFile('./pem/private.pem', privatePem, (err) => {
+ if (err) throw err
+ console.log('私钥已保存！')
+ })
+}
+generator();
+
+
+
+// TODO 生成密文return出来，其他地方调用
+function encrypt(msg) {  // 加密
+  var cipher = "";
+  fs.readFile('./pem/private.pem', (err, data)=> {
+    var key = new NodeRSA(data);
+    var cipherText = key.encryptPrivate(msg, 'base64');
+    cipher = cipherText;
+    console.log(cipher);
+  });
+  // return cipher;
+}
+
+
+// function decrypt() {  // 解密
+//  fs.readFile('./pem/public.pem', function (err, data) {
+//  var key = new NodeRSA(data);
+//  let rawText = key.decryptPublic('fH1aVCUceJYVvt1tZ7WYc1Dh5dVCd952GY5CX283V/wK2229FLgT9WfRNAPMjbTtwL9ghVeYD4Lsi6yM1t4OqA==', 'utf8');
+//  console.log(rawText);
+//  });
+// }
+// //generator();
+// //encrypt();
+// decrypt();
+
 
 function handleMySql(mySqlName,fn){  // 数据库方法
   config.sqlCont.database = mySqlName
@@ -51,7 +98,8 @@ server.listen(port,() => {
 
 module.exports = {
   server,
-  handleMySql
+  handleMySql,
+  encrypt
 };
 // require('./module/sh_grabOpenCourtSessionData.js'); // 上海高院开庭信息
 require('./port/sh_crawler_post.js'); // 上海高院开庭信息查询接口
