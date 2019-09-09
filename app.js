@@ -82,9 +82,9 @@ server.all('*', function(req, res, next) {
     res.send();
   }else{
     res.header(config.postHeader);
-    if (config.postWhiteList.indexOf(req.url) > -1) {
+    // if (config.postWhiteList.indexOf(req.url) > -1) {
       next();
-    }
+    // }
   }
 });
 
