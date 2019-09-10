@@ -85,8 +85,14 @@ app.server.post("/court/sh",(req,res)=>{
     let startDate = Date.parse(req.body.startDate + " 00:00");
     let endDate = Date.parse(req.body.endDate + " 23:00");
     let postList = ['court','the_court','trial_date', 'case_num', 'cause_action', 'department', 'presiding_judge', 'plaintiff', 'defendant']
-    let sql = 'select * from courtData where trial_date between ? and ? and court like ? and presiding_judge like ? ' +
-      'and plaintiff like ? and defendant like ? and case_num like ?' //  limit 15
+    let sql = ''
+    if (req.body.init) {
+      sql = 'select * from courtData where trial_date between ? and ? and court like ? and presiding_judge like ? ' +
+      'and plaintiff like ? and defendant like ? and case_num like ? limit 30'
+    } else {
+      sql = 'select * from courtData where trial_date between ? and ? and court like ? and presiding_judge like ? ' +
+      'and plaintiff like ? and defendant like ? and case_num like ?'
+    }
     db.query(sql,
       [
         startDate,
@@ -100,9 +106,9 @@ app.server.post("/court/sh",(req,res)=>{
       (error,rows)=>{
         if (!error) {
           let postArr = rows
-          let newObj = {}
           let newArr = []
           for (let i=0; i<postArr.length; i++) {
+            let newObj = {}
             if (postArr[i].trial_date) {
               postArr[i].trial_date = formatDate(postArr[i].trial_date)
             }
