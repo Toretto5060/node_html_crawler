@@ -25,7 +25,7 @@ function generator() {  // 生成秘钥 私钥/公钥
  console.log('私钥已保存！')
  })
 }
-generator();
+// generator(); 
 
 
 
