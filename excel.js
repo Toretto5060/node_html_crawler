@@ -175,6 +175,7 @@ function thisData(data) {
  * 处理表格数据
  * **/
 function dealWithData(data) {
+  console.log(data)
   /****
    * 处理表头至excel表头格式
    * ***/
@@ -192,6 +193,8 @@ function dealWithData(data) {
     worksheet.columns = titleDataList;
     fistWrite = false;
   }
+
+
   for (let x = 0; x < data.length; x++) {
     let obj = {}
     for (let y = 0; y < data[x].length; y++) {
