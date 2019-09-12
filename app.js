@@ -10,6 +10,7 @@ const fs = require('fs');
 
 server.use(bodyParser.urlencoded({ extended: true }));
 server.use(bodyParser.json());
+server.use(express.static('public'));
 
 function generator() {  // 生成秘钥 私钥/公钥
  var key = new NodeRSA({ b: 512 })
@@ -25,7 +26,7 @@ function generator() {  // 生成秘钥 私钥/公钥
  console.log('私钥已保存！')
  })
 }
-// generator(); 
+// generator();
 
 
 
@@ -72,7 +73,6 @@ function handleMySql(mySqlName,fn){  // 数据库方法
   });
 }
 
-
 server.all('*', function(req, res, next) {
   if (req.method == "OPTIONS") {
     res.header({
@@ -87,7 +87,6 @@ server.all('*', function(req, res, next) {
     // }
   }
 });
-
 
 let hostName = 'localhost';
 let port = 6090;

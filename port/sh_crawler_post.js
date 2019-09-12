@@ -12,20 +12,20 @@ let worksheet  =  workbook.addWorksheet('Sheet1');
 let startDatas = ""
 let endDatas = ""
 
-function formatDate(now) { 
+function formatDate(now) {
   let Datas = new Date(parseInt(now))
-  let year=Datas.getFullYear(); 
+  let year=Datas.getFullYear();
   let month=Datas.getMonth()+1> 9 ?Datas.getMonth()+1 : "0" + Number(Datas.getMonth()+1);
-  let date=Datas.getDate()> 9 ?Datas.getDate() : "0" + Datas.getDate(); 
-  let hour=Datas.getHours()> 9 ?Datas.getHours() : "0" + Datas.getHours(); 
-  let minute=Datas.getMinutes()>9?Datas.getMinutes():"0" + Datas.getMinutes(); 
+  let date=Datas.getDate()> 9 ?Datas.getDate() : "0" + Datas.getDate();
+  let hour=Datas.getHours()> 9 ?Datas.getHours() : "0" + Datas.getHours();
+  let minute=Datas.getMinutes()>9?Datas.getMinutes():"0" + Datas.getMinutes();
   let amOrpm = ''
   if (hour > 11) {
     amOrpm = '下午'
   } else {
     amOrpm = '上午'
   }
-  return year+"-"+month+"-"+date+amOrpm+hour+"点"+minute+"分"; 
+  return year+"-"+month+"-"+date+amOrpm+hour+"点"+minute+"分";
 }
 
 app.server.get("/getCourt",(req,res) => {  //获取表总长度
@@ -130,7 +130,7 @@ app.server.post("/court/sh",(req,res)=>{
             }
             newArr.push(newObj)
           }
-          
+
           // 不是第一次查询存入数据库
           if (!req.body.init) {
             let tableTitle = [
@@ -171,8 +171,8 @@ app.server.post("/court/sh",(req,res)=>{
             for (let x in tableTitle) {
               let obj = {
                 header: tableTitle[x].label,
-                key: tableTitle[x].label, 
-                width: setWidth[x] 
+                key: tableTitle[x].label,
+                width: setWidth[x]
               }
               titleList.push(obj)
             }
@@ -190,14 +190,17 @@ app.server.post("/court/sh",(req,res)=>{
               }
               worksheet.addRow(rowObj)
             }
-            creatExcel()
+            creatExcel(req.body.timestamp)
           }
-          
+
 
           res.status(200).send({
             code:0,
             letght:newArr.length,
-            data:newArr,
+            data:{
+              data:newArr,
+              url:'/excel/'+ req.body.timestamp+'.xlsx'
+            },
             msg:"查询成功"
           });
         } else {
@@ -210,7 +213,7 @@ app.server.post("/court/sh",(req,res)=>{
 /***
  * 写入数据
  * **/
-function creatExcel() {
+function creatExcel(times) {
   worksheet.views = [{
     state: 'frozen',
     xSplit: 0,
@@ -274,8 +277,8 @@ function creatExcel() {
   let star = startDatas.split('-');
   let end = endDatas.split('-')
 
-  let fileName = star[1]+'.'+star[2]+"-"+ end[1]+'.'+end[2] + "被告数据"+'.xlsx'
-  let fpath = './excelList/'+fileName   //文件存放路径
+  let fileName = times + '.xlsx'
+  let fpath = './public/excel/'+fileName   //文件存放路径
   workbook.xlsx.writeFile(fpath).then(() => {
     console.log('写入成功')
   });
