@@ -150,7 +150,7 @@ function request(path,param,callback) {
         console.log('数据请求失败，下面进入失败循环');
       }
       fistPostError = true
-      if (errorNum < 3) {
+      if (errorNum > 2) {
         console.log('请求失败次数太多，停止请求');
         errorNum = 0;
         errorPost = 0;
