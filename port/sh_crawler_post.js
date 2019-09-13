@@ -1,13 +1,6 @@
 const app = require('../app');
 let Excel = require("exceljs");
-let workbook = new Excel.Workbook();
-// 基本的创建信息
-workbook.creator = "toretto";  //作者
-workbook.lastModifiedBy = "toretto";  //最后一次保存者
-workbook.created = new Date();  // 创建日期
-workbook.modified = new Date(); // 修改日奇
-workbook.lastPrinted = new Date(); //最后一次打印时间
-let worksheet  =  workbook.addWorksheet('Sheet1');
+
 
 let startDatas = ""
 let endDatas = ""
@@ -133,6 +126,14 @@ app.server.post("/court/sh",(req,res)=>{
 
           // 不是第一次查询存入数据库
           if (!req.body.init) {
+            // 基本的创建信息
+            let workbook = new Excel.Workbook();
+            let worksheet  =  workbook.addWorksheet('Sheet1');
+            workbook.creator = "toretto";  //作者
+            workbook.lastModifiedBy = "toretto";  //最后一次保存者
+            workbook.created = new Date();  // 创建日期
+            workbook.modified = new Date(); // 修改日奇
+            workbook.lastPrinted = new Date(); //最后一次打印时间
             let tableTitle = [
               {
                 label:'法院',
@@ -190,7 +191,7 @@ app.server.post("/court/sh",(req,res)=>{
               }
               worksheet.addRow(rowObj)
             }
-            creatExcel(req.body.timestamp)
+            creatExcel(req.body.timestamp,workbook,worksheet)
           }
 
 
@@ -204,7 +205,7 @@ app.server.post("/court/sh",(req,res)=>{
             msg:"查询成功"
           });
         } else {
-          console.log(error)
+          console.log(dataList.getNowFormatDate() + error)
         }
     })
   })
@@ -213,7 +214,7 @@ app.server.post("/court/sh",(req,res)=>{
 /***
  * 写入数据
  * **/
-function creatExcel(times) {
+function creatExcel(times,workbook,worksheet) {
   worksheet.views = [{
     state: 'frozen',
     xSplit: 0,
@@ -280,6 +281,6 @@ function creatExcel(times) {
   let fileName = times + '.xlsx'
   let fpath = './public/excel/'+fileName   //文件存放路径
   workbook.xlsx.writeFile(fpath).then(() => {
-    console.log('写入成功')
+    console.log(dataList.getNowFormatDate() + '请求的excel写入成功')
   });
 }

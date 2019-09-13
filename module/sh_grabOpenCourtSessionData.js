@@ -7,11 +7,13 @@ let fs = require("fs");
 let iconv = require("iconv-lite");
 
 let fistPost = true;  //第一次请求带table。其它不需要
-let fistWrite = true;
+let fistPostError = false;
+let todayFistWrite = true;
 let pageAllNums = 1;  // 总页数
 let titleList = [];   // 处理过的表格头数据
 
-let errorPost = 0;
+let errorPost = 0;  //  失败请求次数
+let errorNum = 0;   //  失败请求循环次数
 
 
 /***
@@ -28,18 +30,19 @@ let month=(today.getMonth()+1<10)?"0"+(today.getMonth()+1):today.getMonth()+1;
 let day=(today.getDate())<10?"0"+today.getDate():today.getDate();
 startData = year + '-' + month + '-' + day
 
-// let endYear = ""
-// let endMonth = ""
-// let endDay = day
-// if (Number(month) + 6 > 12) {
-//   endYear = Number(year) + 1
-//   endMonth = (Number(Number(month) + 6 - 12)) < 10 ? "0" + (Number(Number(month) + 6 - 12)) : (Number(Number(month) + 6 - 12))
-// } else {
-//   endYear = Number(year)
-//   endMonth = Number(Number(month) + 6)
-// }
 endData = Number(year)+1 + '-' +  '12-31'
 
+let postObj = {
+  'yzm': 'C2q6',
+  'ft':'',
+  'ktrqks': startData,
+  'ktrqjs': endData,
+  'spc':'',
+  'yg':'',
+  'bg':'',
+  'ah':'',
+  'pagesnum':1
+}
 
 setInterval(()=>{
   let today = new Date();
@@ -65,45 +68,23 @@ setInterval(()=>{
       endData = endYear + '-' + endMonth + '-' + endDay
     }
     endData = Number(year)+1 + '-' +  '12-31'
-    let timer = setInterval(()=>{
-      clearInterval(timer);
-      timer = null;
-      if (postObj.pagesnum < pageAllNums ) {
-        postObj.pagesnum += 1;
-        request('http://www.hshfy.sh.cn/shfy/gweb2017/ktgg_search_content.jsp',postObj,thisData);
-      } else {
-        dataList.sh_grab_uppdate = false;
-        clearInterval(timer);
-        timer = null;
-      }
-    },3000);
-
+    request('http://www.hshfy.sh.cn/shfy/gweb2017/ktgg_search_content.jsp',postObj,thisData);
   }
 },1000);
 
-let postObj = {
-  'yzm': 'C2q6',
-  'ft':'',
-  'ktrqks': startData,
-  'ktrqjs': endData,
-  'spc':'',
-  'yg':'',
-  'bg':'',
-  'ah':'',
-  'pagesnum':1
-}
 request('http://www.hshfy.sh.cn/shfy/gweb2017/ktgg_search_content.jsp',postObj,thisData);
 
 function LoopExecution(){   // 立即查询当天 -- 半个月后数据
   let timer = setInterval(()=>{
-    clearInterval(timer);
-    timer = null;
     if (postObj.pagesnum < pageAllNums ) {
       postObj.pagesnum += 1;
       request('http://www.hshfy.sh.cn/shfy/gweb2017/ktgg_search_content.jsp',postObj,thisData);
     } else {
       clearInterval(timer);
       timer = null;
+      fistPost = true;
+      dataList.sh_port.post_sh_gy = false;
+      dataList.sh_port.sh_grab_uppdate = false;
       console.log('数据更新完毕')
     }
   },3000)
@@ -120,6 +101,14 @@ function iGetInnerText(testStr) {
  * 请求数据
  * **/
 function request(path,param,callback) {
+  dataList.sh_port.post_sh_gy = true;
+  if (todayFistWrite) {
+    console.log("========================== "+ dataList.getNowFormatDate() + " =========================")
+  }
+  todayFistWrite = false
+  if (!fistPostError) {
+    console.log('开始爬取高院开庭数据')
+  }
   let options = {
     hostname: 'www.hshfy.sh.cn',
     port: 80, //端口号 https默认端口 443， http默认的端口号是80
@@ -140,13 +129,12 @@ function request(path,param,callback) {
       'X-Requested-With': 'XMLHttpRequest'
     }
   };
-
-
   let req = http.request(options, function (res) {
     let data = [];
     let size = 0;
     //res.on方法监听数据返回这一过程，"data"参数表示数数据接收的过程中，数据是一点点返回回来的，这里的chunk代表着一条条数据
     if (res.statusCode == 200) {
+      errorPost = 0;
       res.on("data", function (chunk) {
         data.push(chunk);
         size+=chunk.length;
@@ -155,15 +143,31 @@ function request(path,param,callback) {
         let buf=Buffer.concat(data,size);
         let str=iconv.decode(buf,'gbk');
         callback(str);
-        dataList.sh_grab_uppdate = true;
+        dataList.sh_port.sh_grab_uppdate = true;
       })
     } else {
+      if (!fistPostError) {
+        console.log('数据请求失败，下面进入失败循环');
+      }
+      fistPostError = true
+      if (errorNum > 3) {
+        console.log('请求失败次数太多，停止请求');
+        errorNum = 0;
+        errorPost = 0;
+        dataList.sh_port.post_sh_gy = false;
+        dataList.sh_port.sh_grab_uppdate = false;
+        fistPostError = false
+        return;
+      }
       errorPost += 1;
-      if (errorPost < 4) {
+      if (errorPost < 3 && errorPost != 0) {
         request('http://www.hshfy.sh.cn/shfy/gweb2017/ktgg_search_content.jsp',postObj,thisData);
+        console.log('第'+postObj.pagesnum+'页数据请求失败第'+errorPost+'次,即将进行第'+(errorPost + 1)+'次尝试')
       } else {
         //TODO 记录请求失败的页数
-        errorPost = 0;
+        console.log('第'+postObj.pagesnum+'页数据请求失败超过3次,即将请求第'+(postObj.pagesnum + 1)+'页数据')
+        errorNum += 1;        
+        errorPost = 0
         postObj.pagesnum += 1;
         request('http://www.hshfy.sh.cn/shfy/gweb2017/ktgg_search_content.jsp',postObj,thisData);
       }
@@ -188,6 +192,13 @@ function thisData(data) {
     let reg = /(<strong>)+(.*?)(<\/strong>)+/
     let pageNum = Math.ceil(Number(reg.exec(data)[2]) / 15);
     pageAllNums = pageNum;
+    db.query('select count(*) as court from courtData',(error,rows) => {
+      if (!error) {
+        if (pageAllNums == (rows[0].court) * 15) {
+          return;
+        }
+      }
+    })
   }
   let tableCont = data.split('<TBODY>')[1].split('</TBODY>')[0];
   let line = tableCont.split('</TR>');
@@ -258,7 +269,6 @@ function thisData(data) {
         lineArr.push(nowTime);
         contDataList.push(lineArr);
       }
-      fistPost = false;
     }
   }
   dealWithData(contDataList);
@@ -294,79 +304,12 @@ function dealWithData(data) {
       }
       // rows.affectedRows   // 更新条数
       // rows.insertId   // 插入起始id
+      fistPost = false;
       LoopExecution();
       console.log('第' + postObj.pagesnum+'页数据导入完毕，共'+pageAllNums+'页，共'+pageAllNums*15+'条数据');
     })
   })
 
-
-
-
-
-
-
-  // for (let x = 0; x < dataLength; x++) {
-  //   let obj = {};
-  //   for (let y = 0; y < tableData.length; y++) {
-  //     if (data[x][y]) {
-  //       obj[tableData[y]] = data[x][y]
-  //     } else {
-  //       obj[tableData[y]] = ""
-  //     }
-  //   }
-
-    // app.handleMySql('sh_grabOpenCourt',function (db) {
-    //   db.query(
-    //     'select * from courtData where ' +
-    //     'court=? and ' +
-    //     'the_court=? and ' +
-    //     'trial_date=? and ' +
-    //     'case_num=? and ' +
-    //     'cause_action=? and ' +
-    //     'department=? and ' +
-    //     'presiding_judge=? and ' +
-    //     'plaintiff=? and ' +
-    //     'defendant=? ',
-    //     [obj.court,
-    //       obj.the_court,
-    //       obj.trial_date,
-    //       obj.case_num,
-    //       obj.cause_action,
-    //       obj.department,
-    //       obj.presiding_judge,
-    //       obj.plaintiff,
-    //       obj.defendant
-    //     ], (error, rows) => {
-    //       if (error) {
-    //         console.log(error)
-    //       }
-    //       if (rows.length < 1) {
-            /****
-             * 写入
-             * **/
-          //   app.handleMySql('sh_grabOpenCourt',function (db) {
-          //     db.query(
-          //       'INSERT INTO courtData SET  ?',
-          //       obj,
-          //       (error,rows) => {
-          //         if(error){
-          //           console.log(error);
-          //         }else{
-          //           console.log('写入成功')
-
-          //         }
-          //       });
-          //   });
-          // } else {
-          //   console.log('已存在list_id = '+rows[0].list_id+'的记录')
-          // }
-  //       });
-  //   })
-
-
-  // }
-
-  // }
 }
 
 

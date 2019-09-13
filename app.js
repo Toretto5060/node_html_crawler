@@ -5,6 +5,7 @@ const mysql = require("mysql");
 let config = require("./config/index");
 const NodeRSA = require('node-rsa');
 const fs = require('fs');
+const dataList = require('./module/variableList');
 
 
 
@@ -88,10 +89,14 @@ server.all('*', function(req, res, next) {
   }
 });
 
-let hostName = 'box.toretto.top';
+// let hostName = 'box.toretto.top';
+let hostName = 'http://localhost';
 let port = 6090;
 server.listen(port,() => {
   console.log(`服务器运行在http://${hostName}:${port}`);
+  require('./module/sh_grabOpenCourtSessionData.js'); // 爬取上海高院开庭信息
+  require('./port/publicPort.js'); // 公用接口调用
+  require('./port/sh_crawler_post.js'); // 上海高院开庭信息查询接口
 });
 
 
@@ -100,8 +105,5 @@ module.exports = {
   handleMySql,
   encrypt
 };
-require('./module/sh_grabOpenCourtSessionData.js'); // 爬取上海高院开庭信息
-require('./port/publicPort.js'); // 公用接口调用
-require('./port/sh_crawler_post.js'); // 上海高院开庭信息查询接口
 
 
