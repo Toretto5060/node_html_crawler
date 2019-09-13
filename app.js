@@ -89,8 +89,7 @@ server.all('*', function(req, res, next) {
   }
 });
 
-// let hostName = 'box.toretto.top';
-let hostName = 'http://localhost';
+let hostName = 'http://localhost'; // box.toretto.top
 let port = 6090;
 server.listen(port,() => {
   console.log(`服务器运行在http://${hostName}:${port}`);
