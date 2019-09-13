@@ -1,5 +1,6 @@
 const app = require('../app');
 const crypto = require('crypto'); //加载md5加密文件
+const dataList = require('./variableList');
 let http = require("http"); //http 请求
 let qs = require("querystring");
 let fs = require("fs");
@@ -40,44 +41,45 @@ startData = year + '-' + month + '-' + day
 endData = Number(year)+1 + '-' +  '12-31'
 
 
-// setInterval(()=>{
-//   let today = new Date();
-//   let year=today.getFullYear();
-//   let month=(today.getMonth()+1<10)?"0"+(today.getMonth()+1):today.getMonth()+1;
-//   let day=(today.getDate())<10?"0"+today.getDate():today.getDate();
-//   let hour=(today.getHours())<10?"0"+today.getHours():today.getHours();
-//   let minute=(today.getMinutes())<10?"0"+today.getMinutes():today.getMinutes();
-//   var second=(today.getSeconds())<10?"0"+today.getSeconds():today.getSeconds();
-//
-//   let myddy=today.getDay();//获取存储当前日期
-//   let weekday=["星期日","星期一","星期二","星期三","星期四","星期五","星期六"];
-//   let week = weekday[myddy]
-//
-//   if (week == "星期六" && hour == '00' && minute == "00" && second == "00") {
-//     startData = year + '-' + month + '-' + day
-//     let endYear = ""
-//     let endMonth = ""
-//     let endDay = day
-//     if (Number(month) + 6 > 12) {
-//       endYear = Number(year) + 1
-//       endMonth = (Number(Number(month) + 6 - 12)) < 10 ? "0" + (Number(Number(month) + 6 - 12)) : (Number(Number(month) + 6 - 12))
-//       endData = endYear + '-' + endMonth + '-' + endDay
-//     }
-//     endData = Number(year)+1 + '-' +  '12-31'
-//     let timer = setInterval(()=>{
-//       clearInterval(timer);
-//       timer = null;
-//       if (postObj.pagesnum < pageAllNums ) {
-//         postObj.pagesnum += 1;
-//         request('http://www.hshfy.sh.cn/shfy/gweb2017/ktgg_search_content.jsp',postObj,thisData);
-//       } else {
-//         clearInterval(timer);
-//         timer = null;
-//       }
-//     },3000);
-//
-//   }
-// },1000);
+setInterval(()=>{
+  let today = new Date();
+  let year=today.getFullYear();
+  let month=(today.getMonth()+1<10)?"0"+(today.getMonth()+1):today.getMonth()+1;
+  let day=(today.getDate())<10?"0"+today.getDate():today.getDate();
+  let hour=(today.getHours())<10?"0"+today.getHours():today.getHours();
+  let minute=(today.getMinutes())<10?"0"+today.getMinutes():today.getMinutes();
+  var second=(today.getSeconds())<10?"0"+today.getSeconds():today.getSeconds();
+
+  let myddy=today.getDay();//获取存储当前日期
+  let weekday=["星期日","星期一","星期二","星期三","星期四","星期五","星期六"];
+  let week = weekday[myddy]
+
+  if (week == "星期六" && hour == '00' && minute == "00" && second == "00") {
+    startData = year + '-' + month + '-' + day
+    let endYear = ""
+    let endMonth = ""
+    let endDay = day
+    if (Number(month) + 6 > 12) {
+      endYear = Number(year) + 1
+      endMonth = (Number(Number(month) + 6 - 12)) < 10 ? "0" + (Number(Number(month) + 6 - 12)) : (Number(Number(month) + 6 - 12))
+      endData = endYear + '-' + endMonth + '-' + endDay
+    }
+    endData = Number(year)+1 + '-' +  '12-31'
+    let timer = setInterval(()=>{
+      clearInterval(timer);
+      timer = null;
+      if (postObj.pagesnum < pageAllNums ) {
+        postObj.pagesnum += 1;
+        request('http://www.hshfy.sh.cn/shfy/gweb2017/ktgg_search_content.jsp',postObj,thisData);
+      } else {
+        dataList.sh_grab_uppdate = false;
+        clearInterval(timer);
+        timer = null;
+      }
+    },3000);
+
+  }
+},1000);
 
 let postObj = {
   'yzm': 'C2q6',
@@ -152,7 +154,8 @@ function request(path,param,callback) {
       res.on("end", function () {
         let buf=Buffer.concat(data,size);
         let str=iconv.decode(buf,'gbk');
-        callback(str)
+        callback(str);
+        dataList.sh_grab_uppdate = true;
       })
     } else {
       errorPost += 1;
