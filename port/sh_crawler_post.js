@@ -275,12 +275,9 @@ function creatExcel(times,workbook,worksheet) {
    * 写入数据
    * **/
 
-  let star = startDatas.split('-');
-  let end = endDatas.split('-')
-
   let fileName = times + '.xlsx'
-  let fpath = './public/excel/'+fileName   //文件存放路径
-  workbook.xlsx.writeFile(fpath).then(() => {
+  let fpath = './static/excel/'+fileName   //线上pm2启动根目录为AstartNodeServer
+  workbook.xlsx.writeFile(fpath).then((err,data) => {
     console.log('请求的excel写入成功')
   });
 }
