@@ -205,7 +205,7 @@ app.server.post("/court/sh",(req,res)=>{
             msg:"查询成功"
           });
         } else {
-          console.log(dataList.getNowFormatDate() + error)
+          console.log(error)
         }
     })
   })
@@ -281,6 +281,6 @@ function creatExcel(times,workbook,worksheet) {
   let fileName = times + '.xlsx'
   let fpath = './public/excel/'+fileName   //文件存放路径
   workbook.xlsx.writeFile(fpath).then(() => {
-    console.log(dataList.getNowFormatDate() + '请求的excel写入成功')
+    console.log('请求的excel写入成功')
   });
 }
