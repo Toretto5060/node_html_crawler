@@ -165,7 +165,11 @@ function request(path,param,callback) {
         console.log('第'+postObj.pagesnum+'页数据请求失败第'+errorPost+'次,即将进行第'+(errorPost + 1)+'次尝试')
       } else {
         //TODO 记录请求失败的页数
-        console.log('第'+postObj.pagesnum+'页数据请求失败超过3次,即将请求第'+(postObj.pagesnum + 1)+'页数据')
+        if(errorNum == 3) {
+          console.log('第'+postObj.pagesnum+'页数据请求失败超过3次,即将停止请求')
+        } else {
+          console.log('第'+postObj.pagesnum+'页数据请求失败超过3次,即将请求第'+(postObj.pagesnum + 1)+'页数据')
+        } 
         errorNum += 1;        
         errorPost = 0
         postObj.pagesnum += 1;
