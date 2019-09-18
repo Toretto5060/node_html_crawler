@@ -11,7 +11,7 @@ const dataList = require('./module/variableList');
 
 server.use(bodyParser.urlencoded({ extended: true }));
 server.use(bodyParser.json());
-server.use(express.static('static')); //线上pm2启动根目录为AstartNodeServer
+server.use(express.static('../crawl_data/static')); //线上pm2启动根目录为AstartNodeServer
 
 function generator() {  // 生成秘钥 私钥/公钥
  var key = new NodeRSA({ b: 512 })
@@ -93,7 +93,7 @@ let hostName = 'http://localhost'; // box.toretto.top
 let port = 6090;
 server.listen(port,() => {
   console.log(`服务器运行在http://${hostName}:${port}`);
-  // require('./module/sh_grabOpenCourtSessionData.js'); // 爬取上海高院开庭信息
+  require('./module/sh_grabOpenCourtSessionData.js'); // 爬取上海高院开庭信息
   require('./port/publicPort.js'); // 公用接口调用
   require('./port/sh_crawler_post.js'); // 上海高院开庭信息查询接口
 });
