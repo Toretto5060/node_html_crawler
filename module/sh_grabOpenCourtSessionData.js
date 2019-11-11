@@ -32,8 +32,20 @@ startData = year + '-' + month + '-' + day
 
 endData = Number(year)+1 + '-' +  '12-31'
 
+// 获取随机4个英文字母
+function getRanNum(){
+  var result = [];
+   for(var i=0;i<4;i++){
+      var ranNum = Math.ceil(Math.random() * 25);
+       result.push(String.fromCharCode(65+ranNum));
+   }
+return  result.join('');
+}
+
+let randomLetters = getRanNum();
+
 let postObj = {
-  'yzm': 'C2q6',
+  'yzm': randomLetters,
   'ft':'',
   'ktrqks': startData,
   'ktrqjs': endData,
@@ -59,6 +71,7 @@ setInterval(()=>{
 
   if (week == "星期六" && hour == '00' && minute == "00" && second == "00") {
     console.log('更新时间到')
+    randomLetters = getRanNum();
     startData = year + '-' + month + '-' + day
     let endYear = ""
     let endMonth = ""
@@ -87,6 +100,7 @@ function LoopExecution(){
       clearTimeout(timer);
       timer = null;
       fistPost = true;
+      postObj.pagesnum = 1;
       dataList.sh_port.post_sh_gy = false;
       dataList.sh_port.sh_grab_uppdate = false;
       console.log('数据更新完毕')
@@ -124,7 +138,7 @@ function request(path,param,callback) {
       "Connection": 'keep-alive',
       // "Content-Length": '76',
       "Content-Type": 'application/x-www-form-urlencoded',
-      "Cookie": 'COLLPCK=2752062497; JSESSIONID=13E074293E102DDBFD4344A4E2D32F6B-n1',
+      // "Cookie": 'JSESSIONID=09FDC6A544ED07C209896B89477A9420-n1',
       "Host": 'www.hshfy.sh.cn',
       "Origin": 'http://www.hshfy.sh.cn',
       "Referer": 'http://www.hshfy.sh.cn/shfy/gweb2017/ktgg_search.jsp?COLLCC=2835507212&zd=splc',
@@ -149,6 +163,7 @@ function request(path,param,callback) {
         dataList.sh_port.sh_grab_uppdate = true;
       })
     } else {
+      console.log(res.statusCode)
       console.log('第' + postObj.pagesnum+'页数据请求失败,正在请求下一页');
       LoopExecution()
     }
@@ -242,7 +257,7 @@ function dealData(data) {
     line[i] += "</TR>"
   }
   if (line.length > 2 && line[2].indexOf('暂时') == -1) {
-    for (let j = 1; j < line.length; j++) {    // 第一个数组中数组始终为9个空置，所以从1开始
+    for (let j = 0; j < line.length-1; j++) {    // 第一个数组中数组始终为9个空置，所以从1开始
       let lineArr = []
       let eachLine = line[j].split('</TD>');
       let newEachLine = ""
@@ -261,6 +276,7 @@ function dealData(data) {
           } else {
             everyTitle = iGetInnerText(str1[2])
           }
+
           if (j == 0) {
             if (everyTitle != "") {
               titleList.push(everyTitle)
@@ -283,9 +299,8 @@ function dealData(data) {
           else if(str1[2].indexOf("下午") > -1) {
             newEachLine=Date.parse(iGetInnerText(str1[2]).replace('下午', ' ',).replace('点', ':',).replace('分',''));
           }
-          
+          lineArr.push(newEachLine);
         }
-        lineArr.push(newEachLine);
       }
       if (lineArr.length > 1) {
         const hash = crypto.createHash('md5');   //将数组转换成字符串，加密存入，便于批量导入判断是否为重复数据
@@ -324,7 +339,6 @@ function dealWithData(data) {
     }
     titleDataList.push(obj)
   }
-
   /***
   *  批量导入
   **/
